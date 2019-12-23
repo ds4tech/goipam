@@ -1,4 +1,4 @@
-package ipam
+package main
 
 import (
   "fmt"
@@ -24,7 +24,7 @@ func checkDhcp(ipaddress string) bool {
 
   if( len(response)>0 ){
   log.Println("[DEBUG] IPAM.DhcpScope", response[0])
-  return true 
+  return true
   } else {
   return false
   }

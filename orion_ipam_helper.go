@@ -1,4 +1,4 @@
-package ipam
+package main
 
 import (
     "encoding/json"

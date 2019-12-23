@@ -1,11 +1,10 @@
-package main
+package ipam
 
 import (
   "log"
   "os"
   "flag"
 	"github.com/mrxinu/gosolar"
-	"github.com/ds4tech/terraform-provider-swis/swis"
 )
 
 var (

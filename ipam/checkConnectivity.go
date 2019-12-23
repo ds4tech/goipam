@@ -16,17 +16,21 @@ func checkDhcp(ipaddress string) bool {
 
   queryIpnode := fmt.Sprintf("SELECT IpNodeId,SubnetId,Uri FROM IPAM.IPNode WHERE IPAddress='%s'", ipaddress)
   response = queryOrionServer(client, queryIpnode)
-  log.Println("[DEBUG] IPAM.IPNode", response[0])
+  if( len(response)>0 ){
+    log.Println("[DEBUG] IPAM.IPNode", response[0])
+  } else {
+    log.Fatalf("[ERROR] Ipaddress not found in IPAM.IPNode")
+  }
 
   queryDhcp := fmt.Sprintf("SELECT NodeId,ScopeId FROM IPAM.DhcpScope WHERE SubnetId='%d'", response[0].SUBNETID)
   response = queryOrionServer(client, queryDhcp )
   log.Println("[DEBUG] IPAM.DhcpScope", queryDhcp)
 
   if( len(response)>0 ){
-  log.Println("[DEBUG] IPAM.DhcpScope", response[0])
-  return true
+    log.Println("[DEBUG] IPAM.DhcpScope", response[0])
+    return true
   } else {
-  return false
+    return false
   }
 }
 

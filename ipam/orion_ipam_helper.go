@@ -32,7 +32,7 @@ func getAllIpAddresses(client * gosolar.Client, vlan string)  {
     response = queryOrionServer(client, querySubnet)
     log.Printf("[DEBUG] SUBNETID: %v\n", response[0].SUBNETID)
 
-    queryIpnode := fmt.Sprintf("SELECT IpNodeId,IPAddress,Comments,Status,Uri,DisplayName FROM IPAM.IPNode WHERE SubnetId='%d' and status=2", response[0].SUBNETID)
+    queryIpnode := fmt.Sprintf("SELECT IpNodeId,IPAddress,Comments,Status,Uri,DisplayName FROM IPAM.IPNode WHERE SubnetId='%d'", response[0].SUBNETID)
     response = queryOrionServer(client, queryIpnode)
 
     log.Println("[DEBUG] DisplayName, IPAddress, comments")
@@ -46,7 +46,7 @@ func reserveIpAddress(client * gosolar.Client, ipaddress string, comment string)
 
     querySubnet := fmt.Sprintf("SELECT IpNodeId,IPAddress,Comments,Status,Uri FROM IPAM.IPNode WHERE IPAddress='%s'", ipaddress)
     response = queryOrionServer(client, querySubnet)
-    log.Printf("[DEBUG] Reserve: IPADDRESS: %v, COMMENTS: %v\n", response[0].IPADDRESS, response[0].COMMENTS)
+    log.Printf("[DEBUG] Reserve: IPADDRESS: %v, COMMENTS: %v, URI: %v\n", ipaddress, comment, response[0].URI)
 
     if(2 == response[0].STATUS) {
       updateIPNodeStatus(client, response[0].URI, "1", comment) // '1' == ip used
@@ -63,7 +63,7 @@ func releaseIpAddress(client * gosolar.Client, ipaddress string)  {
 
     querySubnet := fmt.Sprintf("SELECT IpNodeId,IPAddress,Comments,Status,Uri FROM IPAM.IPNode WHERE IPAddress='%s'", ipaddress)
     response = queryOrionServer(client, querySubnet)
-    log.Printf("[DEBUG] Release: IPADDRESS: %v, COMMENTS: %v\n", response[0].IPADDRESS, response[0].COMMENTS)
+    log.Printf("[DEBUG] Reserve: IPADDRESS: %v, COMMENTS: %v, URI: %v\n", ipaddress, comment, response[0].URI)
 
     if(2 != response[0].STATUS) {
       updateIPNodeStatus(client, response[0].URI, "2", "") // '2' == ip available
@@ -92,7 +92,10 @@ func updateIPNodeStatus(client * gosolar.Client, uri string, status string, comm
     }
     _, err := client.Update(uri, req)
     if err != nil {
-            log.Fatal(err)
+    	log.Printf("[ERROR]\n")
+    	log.Printf("[ERROR] It looks like you do not have privilege to modify this VLAN.\n" )
+    	log.Printf("[ERROR]\n")
+        log.Fatal(err)
     }
 }
 

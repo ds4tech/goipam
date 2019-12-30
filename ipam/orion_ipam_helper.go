@@ -22,11 +22,12 @@ type Node struct {
 
 func getAllIpAddresses(client * gosolar.Client, vlan string)  {
     var response []*Node
+    var status string
 
     subnetIpAddr := findIP(vlan)
     cidr := string(vlan[len(vlan)-2:]) //substring last 2 chars
 
-    log.Printf("[TRACE] vsphere_vlan: %s, subnetIpAddr: %s, cidr: %s", vlan, subnetIpAddr, cidr)
+    log.Printf("[DEBUG] vsphere_vlan: %s, subnetIpAddr: %s, cidr: %s", vlan, subnetIpAddr, cidr)
 
     querySubnet := fmt.Sprintf("SELECT SubnetId FROM IPAM.Subnet WHERE  Address='%s' AND CIDR=%s", subnetIpAddr, cidr)
     response = queryOrionServer(client, querySubnet)
@@ -35,10 +36,44 @@ func getAllIpAddresses(client * gosolar.Client, vlan string)  {
     queryIpnode := fmt.Sprintf("SELECT IpNodeId,IPAddress,Comments,Status,Uri,DisplayName FROM IPAM.IPNode WHERE SubnetId='%d'", response[0].SUBNETID)
     response = queryOrionServer(client, queryIpnode)
 
-    log.Println("[DEBUG] DisplayName, IPAddress, comments")
+    fmt.Println("DisplayName | IPAddress | Comments | Status")
     for _, el := range response {
-      log.Printf("[DEBUG] %s, %s, %s\n", el.DISPLAYNAME, el.IPADDRESS, el.COMMENTS)
+    comment := el.COMMENTS
+    if( len(comment) == 0 ){
+  	   comment = "---"
     }
+    if( 1 == el.STATUS ){
+  	   status = "Used"
+    } else if( 2 == el.STATUS ){
+  	   status = "Available"
+    } else if( 4 == el.STATUS ){
+  	   status = "Reserved"
+    } else if( 8 == el.STATUS ){
+  	   status = "Transient"
+    } else {
+  	   status = string(el.STATUS)
+    }
+      fmt.Printf("%s | %s | %s | %s\n", el.DISPLAYNAME, el.IPADDRESS, comment, status)
+    }
+}
+
+func reserveIpFromVlan(client * gosolar.Client, vlan string, comment string)  {
+    var response []*Node
+    subnetIpAddr := findIP(vlan)
+    cidr := string(vlan[len(vlan)-2:]) //substring last 2 chars
+
+    log.Printf("[DEBUG] vsphere_vlan: %s, subnetIpAddr: %s, cidr: %s", vlan, subnetIpAddr, cidr)
+
+    querySubnet := fmt.Sprintf("SELECT SubnetId FROM IPAM.Subnet WHERE  Address='%s' AND CIDR=%s", subnetIpAddr, cidr)
+    response = queryOrionServer(client, querySubnet)
+
+    log.Printf("[DEBUG] SUBNETID: %v\n", response[0].SUBNETID)
+
+    queryIpnode := fmt.Sprintf("SELECT TOP 1 IpNodeId,IPAddress,Comments,Status,Uri FROM IPAM.IPNode WHERE SubnetId='%d' and status=2 AND IPOrdinal BETWEEN 11 AND 254", response[0].SUBNETID)
+    response = queryOrionServer(client, queryIpnode)
+
+    updateIPNodeStatus(client, response[0].URI, "1", comment) // '1' == ip used
+    fmt.Println("Reserved ip: ", response[0].IPADDRESS)
 }
 
 func reserveIpAddress(client * gosolar.Client, ipaddress string, comment string)  {
@@ -46,14 +81,14 @@ func reserveIpAddress(client * gosolar.Client, ipaddress string, comment string)
 
     querySubnet := fmt.Sprintf("SELECT IpNodeId,IPAddress,Comments,Status,Uri FROM IPAM.IPNode WHERE IPAddress='%s'", ipaddress)
     response = queryOrionServer(client, querySubnet)
-    log.Printf("[DEBUG] Reserve: IPADDRESS: %v, COMMENTS: %v, URI: %v\n", ipaddress, comment, response[0].URI)
+    fmt.Printf("Reserve: IPADDRESS: %v, COMMENTS: %v, URI: %v\n", ipaddress, comment, response[0].URI)
 
     if(2 == response[0].STATUS) {
       updateIPNodeStatus(client, response[0].URI, "1", comment) // '1' == ip used
     } else {
-      log.Fatalf("[DEBUG] Ip address is not available. It has status %v.", response[0].STATUS)
+      log.Fatalf("[Error] Ip address is not available. It has status %v.", response[0].STATUS)
     }
-    log.Printf("[DEBUG] Reserved")
+    fmt.Println("Reserved")
 }
 
 func changeIpAddressStatus(client * gosolar.Client, ipaddress string)  {}
@@ -63,14 +98,14 @@ func releaseIpAddress(client * gosolar.Client, ipaddress string)  {
 
     querySubnet := fmt.Sprintf("SELECT IpNodeId,IPAddress,Comments,Status,Uri FROM IPAM.IPNode WHERE IPAddress='%s'", ipaddress)
     response = queryOrionServer(client, querySubnet)
-    log.Printf("[DEBUG] Reserve: IPADDRESS: %v, COMMENTS: %v, URI: %v\n", ipaddress, comment, response[0].URI)
+    fmt.Printf("Release: IPADDRESS: %v, COMMENTS: %v, URI: %v\n", ipaddress, response[0].COMMENTS, response[0].URI)
 
     if(2 != response[0].STATUS) {
       updateIPNodeStatus(client, response[0].URI, "2", "") // '2' == ip available
     } else {
-      log.Fatalf("[DEBUG] Ip address is already available. It has status %v.", response[0].STATUS)
+      log.Fatalf("[Error] Ip address is already available. It has status %v.", response[0].STATUS)
     }
-    log.Printf("[DEBUG] Released")
+    fmt.Println("Released")
 }
 
 func queryOrionServer(client * gosolar.Client, query string) []*Node {

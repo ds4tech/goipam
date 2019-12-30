@@ -3,6 +3,7 @@ package main
 import (
   "log"
   "os"
+  "fmt"
   "flag"
 	"github.com/mrxinu/gosolar"
 )
@@ -15,7 +16,7 @@ var (
   ipaddress   string
   comment     string
   status      int
-  list 	      bool
+  list        bool
   reserve     bool
   release     bool
   client * gosolar.Client
@@ -27,9 +28,9 @@ func main() {
   if(len(ipaddress) > 0) {
       log.Printf("[DEBUG] Checks DISABLED")
       if( checkDhcp(ipaddress) ) {
-        log.Printf("[DEBUG] Ipaddress is assigned by DHCP")
+        fmt.Println("Ipaddress is assigned by DHCP")
       } else {
-        log.Printf("[DEBUG] Ipaddress is NOT assigned by DHCP")
+        fmt.Println("Ipaddress is NOT assigned by DHCP")
       }
   /*
       if( checkConnectivity(ipaddress) ) {
@@ -41,26 +42,26 @@ func main() {
   */
   } else if(len(vlan) > 0) {
   }else {
-    log.Fatalf("[Error] Nor VLAN or Ipaddress is provided. Please specify it using params. \nExample: \n\tgoipam -ip=127.0.0.1 \n\tgoipam -vlan=VLAN_141810.14.18.0m24 -list")
+      log.Fatalf("[Error] Nor VLAN or Ipaddress is provided. Please specify it using params. \nExample: \n\tgoipam -ip=127.0.0.1 \n\tgoipam -vlan=VLAN_141810.14.18.0m24 -list")
   }
 
 
   if(len(username)==0 || len(password)==0 || len(host)==0) {
       log.Fatalf("Failed to conntect to orion. Connection details not provided.")
   }
-  log.Printf("[TRACE] Connecting to Orion with credentials: username: %s, password: %s*****, orion_host: %s", username, password[0:len(password)-5], host)
+  fmt.Println("Connecting to Orion with credentials: username: %s, password: %s*****, orion_host: %s", username, password[0:len(password)-5], host)
   log.Printf("[DEBUG] list: %v, reserve: %v, release %v", list, reserve, release)
 
   if( list && len(vlan)>0 ) { //list all ipaddress from provided vlan
-    getAllIpAddresses(client, vlan)
+      getAllIpAddresses(client, vlan)
   } else if( reserve && len(vlan)>0 ) { //reserve first available ipaddress from provided vlan
-    reserveIpAddress(client, ipaddress, comment)
+      reserveIpFromVlan(client, vlan, comment)
   } else if( reserve && len(ipaddress)>0 ) {  //reserve provided ipaddress if available
-    reserveIpAddress(client, ipaddress, comment)
+      reserveIpAddress(client, ipaddress, comment)
   } else if( release && len(ipaddress)>0 ) {  //release provided ipaddress
-    releaseIpAddress(client, ipaddress)
+      releaseIpAddress(client, ipaddress)
   } else {
-    log.Printf("Please, provide one of parameters: list, reserve or release")
+      log.Printf("Please, provide one of parameters: list, reserve or release")
   }
 
 }

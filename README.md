@@ -1,3 +1,6 @@
+# GOIPAM
+This program has been developed to make easy communication with Orion IPAM.
+
 ## Build:
 
 ```go build .```

@@ -11,6 +11,12 @@ It is required to set environment variables ORION_IP, ORION_USER, ORION_PASSWORD
 source env_vars.sh
 ```
 
+If Ping function does not work, please run this command in shell.
+
+```
+	sudo sysctl -w net.ipv4.ping_group_range="0   2147483647
+```
+
 To see more logs, please change logging level by setting following env var.
 
 ```
